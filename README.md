@@ -3,7 +3,7 @@
 SASユーザー総会2026（2026年10月15日）の発表資料と、再現用の解析コードを管理するリポジトリです。
 
 - [発表スライド](presentation/slides.pdf)
-- [スライドのブラウザプレビュー（GitHub Pages）](https://nissinbo.github.io/SUGI2026_firth/)
+- [スライドPDFをブラウザで直接開く（GitHub Pages）](https://nissinbo.github.io/SUGI2026_firth/slides.pdf)
 - [発表原稿](presentation/speaker_notes_25min.md)
 - [想定Q&A](presentation/qa.md)
 
@@ -46,6 +46,6 @@ GitHub Actionsの `.github/workflows/render-pdf.yml` は、保存済みの計算
 - PDFに差分がない場合やPRでは書き戻しません。生成中に `main` が先へ進んだ場合も古いPDFの書き戻しをスキップします。必要な場合は最新の `main` で手動実行してください。
 - 書き戻し専用ジョブだけに `contents: write` を付与し、標準の `GITHUB_TOKEN` を使用します。この自動pushではCIを再起動しません。
 
-mainでrenderに成功すると、同じPDF artifactと `docs/pages/index.html` からプレビューサイトを作り、GitHub Pagesにも公開します。PRではPagesへ公開しません。公開先は [スライドプレビュー](https://nissinbo.github.io/SUGI2026_firth/) です。GitHubの **Settings → Pages → Build and deployment → Source** は **GitHub Actions** を選択してください（ブランチからの公開ではありません）。
+mainでrenderに成功すると、生成したPDFをそのままGitHub Pagesに公開します。HTMLのプレビューページは作成せず、[PDFファイルを直接開く](https://nissinbo.github.io/SUGI2026_firth/slides.pdf) ことでブラウザ標準のPDFビューアで全面表示します。PRではPagesへ公開しません。GitHubの **Settings → Pages → Build and deployment → Source** は **GitHub Actions** を選択してください（ブランチからの公開ではありません）。
 
 したがって、計算結果を更新するときはローカル環境で結果・図を更新してコミットし、CIではrenderだけを再現します。

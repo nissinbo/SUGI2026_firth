@@ -9,7 +9,6 @@ on:
       - "presentation/**"
       - "results/figures/**"
       - "scripts/render_slides.ps1"
-      - "docs/pages/**"
   push:
     branches:
       - main
@@ -20,7 +19,6 @@ on:
       - "presentation/**"
       - "results/figures/**"
       - "scripts/render_slides.ps1"
-      - "docs/pages/**"
   workflow_dispatch:
 
 permissions:
@@ -140,7 +138,7 @@ jobs:
           git push origin HEAD:main
 
   prepare-pages:
-    name: Prepare Pages preview
+    name: Prepare PDF for Pages
     needs: render
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -149,22 +147,18 @@ jobs:
       contents: read
 
     steps:
-      - name: Check out preview page
-        uses: actions/checkout@v4
-
       - name: Download rendered PDF
         uses: actions/download-artifact@v4
         with:
           name: slides-pdf
           path: _site
 
-      - name: Prepare static site
+      - name: Verify PDF for direct browser access
         shell: bash
         run: |
-          cp docs/pages/index.html _site/index.html
-          touch _site/.nojekyll
           test -s _site/slides.pdf
           test "$(head -c 5 _site/slides.pdf)" = "%PDF-"
+          touch _site/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
@@ -172,7 +166,7 @@ jobs:
           path: _site
 
   deploy-pages:
-    name: Deploy PDF preview
+    name: Deploy PDF to GitHub Pages
     needs: prepare-pages
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
