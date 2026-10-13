@@ -9,6 +9,7 @@ on:
       - "presentation/**"
       - "results/figures/**"
       - "scripts/render_slides.ps1"
+      - "docs/pages/**"
   push:
     branches:
       - main
@@ -19,6 +20,7 @@ on:
       - "presentation/**"
       - "results/figures/**"
       - "scripts/render_slides.ps1"
+      - "docs/pages/**"
   workflow_dispatch:
 
 permissions:
@@ -136,3 +138,53 @@ jobs:
           # GITHUB_TOKEN pushes do not trigger another push workflow run.
           # A concurrent update to main is rejected by this normal push.
           git push origin HEAD:main
+
+  prepare-pages:
+    name: Prepare Pages preview
+    needs: render
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out preview page
+        uses: actions/checkout@v4
+
+      - name: Download rendered PDF
+        uses: actions/download-artifact@v4
+        with:
+          name: slides-pdf
+          path: _site
+
+      - name: Prepare static site
+        shell: bash
+        run: |
+          cp docs/pages/index.html _site/index.html
+          touch _site/.nojekyll
+          test -s _site/slides.pdf
+          test "$(head -c 5 _site/slides.pdf)" = "%PDF-"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy-pages:
+    name: Deploy PDF preview
+    needs: prepare-pages
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
