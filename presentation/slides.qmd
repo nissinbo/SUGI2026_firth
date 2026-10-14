@@ -180,7 +180,7 @@ CAMISでは、SAS PROC LOGISTICとR logistfの実装差と実行結果を比較�
 #presentation-table(
   (1.5fr, 1.2fr, 1fr, 1.8fr),
   table.header([実装], [既定の信頼区間], [既定の検定], [切り替え方法]),
-  [SAS \ PROC LOGISTIC], [`CLPARM`で指定], [Wald検定], [p値は変更不可],
+  [SAS \ PROC LOGISTIC], [`CLPARM`で指定], [Wald検定], [係数表のp値はWald],
   [SAS %FL], [PL区間], [PLRT], [`pl`でWald区間・検定],
   [R logistf], [PL区間], [PLRT], [`pl`でWald区間・検定],
   [R brglm2], [Wald区間], [Wald検定], [本発表ではWald法を使用],
@@ -331,6 +331,28 @@ confint(fit_bg, level = 0.95)
 
 分割表は各組み合わせを1件、共変量モデルは各データを1件として数える。
 
+## 比較する数値の保存方法
+
+**倍精度の64ビットを、16桁の16進文字列として保持した。**
+
+```{=typst}
+#block[
+#set text(size: 18pt)
+#presentation-table(
+  (1.3fr, 3.8fr),
+  table.header([対象], [保存・復元の方法]),
+  [R → SASの入力], [R：`writeBin`で8バイト化 → 16進文字列 \ SAS：`input(..., hex16.)`で復元],
+  [SAS → Rの結果], [SAS：数値データを`put(..., hex16.)`で出力 \ R：文字列として読み、`readBin`で復元],
+  [Rの計算結果], [`saveRDS` / `readRDS`で保存・読込],
+)
+]
+```
+
+十進数の有効数字16桁に丸めたという意味ではない。\
+受け渡し時の丸めを避け、判定・数値差には復元した値を使う。
+
+[[SAS HEX16.](https://support.sas.com/documentation/cdl/en/hostwin/69955/HTML/default/p0oq9gdcl68ivzn1rdfu1d3an227.htm); [R readBin / writeBin](https://stat.ethz.ch/R-manual/R-devel/library/base/html/readBin.html)]{.small-cite}
+
 ## 設定を変更した比較
 
 既定の設定から変更し、信頼区間・p値への影響を調べる。
@@ -447,16 +469,39 @@ PROC LOGISTICのWald区間 対 logistfのPL区間\
 
 ## 要因別の影響：信頼区間の数値差
 
-どの要素を変更すると差が大きくなるかの比較を行った。
+各群25例、共通672表。同じ実装の中で設定を変更して比較した。
 
-![](../results/figures/factor_ci_difference.png){width=97%}
+```{=typst}
+#block[
+#set text(size: 18pt)
+#set par(leading: 0.35em)
+#presentation-table(
+  (3.5fr, 1fr, 1fr),
+  table.header([変更内容], [中央値], [99パーセンタイル]),
+  // LF_inference
+  [logistf：Wald区間 → PL区間], [0.118], [1.98],
+  // SAS_CI
+  [PROC LOGISTIC：Wald区間 → PL区間], [0.0988], [1.92],
+  // SAS_gradient
+  [PROC LOGISTIC：点推定の収束基準（Wald）], [$4.3 times 10^(-5)$], [$1.07 times 10^(-3)$],
+  // SAS_PL_control
+  [PROC LOGISTIC：PL探索の収束基準], [$2.68 times 10^(-7)$], [$6.1 times 10^(-5)$],
+  // BG_threshold
+  [brglm2：点推定の収束基準], [$1.39 times 10^(-9)$], [$1.63 times 10^(-7)$],
+)
+]
+```
+
+**logistf・PROC LOGISTICとも、WaldかPLかという区間の方式の影響が大きかった。**
+
+[数値差は下限・上限の絶対差のうち大きい方。主な5比較を示し、その他は補足。]{.small-cite}
 
 # 考察
 
 ## SAS・Rの各実装で異なる要素
 
 **信頼区間・検定：** %FL・logistfはPL法とWald法を切り替えられる。本発表で用いたbrglm2の出力はWald法である。\
-PROC LOGISTICは信頼区間を変更できるが、検定はWaldのみ使用できる。
+PROC LOGISTICは信頼区間を変更できるが、今回比較した係数表のp値はWald検定のままである。
 
 **標準誤差：** PROC LOGISTIC・%FL・brglm2は通常の情報行列、logistfは補助重みを加えた情報行列を用いる。
 
@@ -512,3 +557,61 @@ PROC LOGISTICは信頼区間を変更できるが、検定はWaldのみ使用で
 $$\operatorname{logit}(p_i)=\alpha_\rho+\log(2)\,\mathrm{exposure}_i+0.5x_{1i}+0.5x_{2i}$$
 
 $$x_1,z\sim N(0,1),\qquad x_2=\rho x_1+\sqrt{1-\rho^2}\,z$$
+
+## 要因別の影響：その他の比較（1）
+
+各群25例、共通672表。信頼区間の数値差を示す。
+
+```{=typst}
+#block[
+#set text(size: 16pt)
+#set par(leading: 0.35em)
+#presentation-table(
+  (3.5fr, 1fr, 1fr),
+  table.header([変更内容], [中央値], [99パーセンタイル]),
+  // SAS_algorithm_default
+  [PROC LOGISTIC：Fisher → Newton（既定）], [$2.22 times 10^(-16)$], [$4.7 times 10^(-15)$],
+  // SAS_algorithm_tight
+  [PROC LOGISTIC：Fisher → Newton（厳しい設定）], [$2.22 times 10^(-16)$], [$8.88 times 10^(-15)$],
+  // LF_algorithm_default
+  [logistf：Newton → IRLS（既定）], [$7.22 times 10^(-15)$], [$1.56 times 10^(-12)$],
+  // LF_algorithm_tight
+  [logistf：Newton → IRLS（厳しい設定）], [$6.22 times 10^(-15)$], [$2.44 times 10^(-12)$],
+  // SAS_maxit
+  [PROC LOGISTIC：点推定の反復上限], [0], [0],
+  // LF_maxit
+  [logistf：点推定の反復上限], [0], [0],
+  // BG_maxit
+  [brglm2：点推定の反復上限], [0], [0],
+)
+]
+```
+
+[計算アルゴリズム・反復上限の変更による数値差は、この条件ではごく小さかった。]{.small-cite}
+
+## 要因別の影響：その他の比較（2）
+
+各群25例、共通672表。信頼区間の数値差を示す。
+
+```{=typst}
+#block[
+#set text(size: 17pt)
+#set par(leading: 0.35em)
+#presentation-table(
+  (3.5fr, 1fr, 1fr),
+  table.header([変更内容], [中央値], [99パーセンタイル]),
+  // SAS_parameter
+  [PROC LOGISTIC：係数変化による収束基準（Wald）], [$4.14 times 10^(-5)$], [$1.07 times 10^(-3)$],
+  // LF_threshold
+  [logistf：点推定の収束基準], [$6.44 times 10^(-15)$], [$1.23 times 10^(-12)$],
+  // LF_PL_control
+  [logistf：PL探索条件（既定の点推定）], [$1.11 times 10^(-14)$], [$3.32 times 10^(-12)$],
+  // LF_PL_control_tight_fit
+  [logistf：PL探索条件（厳しい点推定）], [$1.14 times 10^(-14)$], [$2.27 times 10^(-12)$],
+  // FL_controls
+  [%FL：点推定・PL計算の条件を同時変更], [$2.68 times 10^(-7)$], [$6.1 times 10^(-5)$],
+)
+]
+```
+
+[%FLは点推定とPL計算の設定を同時に変更しており、単独要因の比較とは区別する。]{.small-cite}
