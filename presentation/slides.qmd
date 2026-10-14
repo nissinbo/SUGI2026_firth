@@ -476,7 +476,7 @@ PROC LOGISTICのWald区間 対 logistfのPL区間\
 #set text(size: 18pt)
 #set par(leading: 0.35em)
 #presentation-table(
-  (3.5fr, 1fr, 1fr),
+  (3.2fr, 1fr, 1.3fr),
   table.header([変更内容], [中央値], [99パーセンタイル]),
   // LF_inference
   [logistf：Wald区間 → PL区間], [0.118], [1.98],
@@ -492,9 +492,9 @@ PROC LOGISTICのWald区間 対 logistfのPL区間\
 ]
 ```
 
-**logistf・PROC LOGISTICとも、WaldかPLかという区間の方式の影響が大きかった。**
+**両実装で、区間の方式（Wald / PL）による影響が大きかった。**
 
-[数値差は下限・上限の絶対差のうち大きい方。主な5比較を示し、その他は補足。]{.small-cite}
+[数値差は対数オッズ比尺度での下限・上限の絶対差の大きい方。その他12比較は補足。]{.small-cite}
 
 # 考察
 
@@ -567,7 +567,7 @@ $$x_1,z\sim N(0,1),\qquad x_2=\rho x_1+\sqrt{1-\rho^2}\,z$$
 #set text(size: 16pt)
 #set par(leading: 0.35em)
 #presentation-table(
-  (3.5fr, 1fr, 1fr),
+  (3.2fr, 1fr, 1.3fr),
   table.header([変更内容], [中央値], [99パーセンタイル]),
   // SAS_algorithm_default
   [PROC LOGISTIC：Fisher → Newton（既定）], [$2.22 times 10^(-16)$], [$4.7 times 10^(-15)$],
@@ -598,7 +598,7 @@ $$x_1,z\sim N(0,1),\qquad x_2=\rho x_1+\sqrt{1-\rho^2}\,z$$
 #set text(size: 17pt)
 #set par(leading: 0.35em)
 #presentation-table(
-  (3.5fr, 1fr, 1fr),
+  (3.2fr, 1fr, 1.3fr),
   table.header([変更内容], [中央値], [99パーセンタイル]),
   // SAS_parameter
   [PROC LOGISTIC：係数変化による収束基準（Wald）], [$4.14 times 10^(-5)$], [$1.07 times 10^(-3)$],
